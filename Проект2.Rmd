@@ -80,6 +80,7 @@ na_counts_df <- data.frame(Column=names(na_counts), NA_Count=na_counts)
 rownames(na_counts_df) <- NULL
 
 # Преобразуйте датафрейм в красивую таблицу с помощью функции kable
+```
 kable(na_counts_df, "pipe", caption = "Количество NA по столбцам")
 ```
 В связи с большим количеством наблюдений и неинформативности строк с пропущенными значениями:
