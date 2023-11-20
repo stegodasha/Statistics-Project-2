@@ -44,7 +44,7 @@ str(df)
 ```{r cars}
 summary(soybean)
 ```
-Приведем данные к соответствующим типам:
+Приведем данные к соответствующим типам (категориальные переменные из character в factor):
 ```{r}
 soybean$leaf_shape <- as.factor(soybean$leaf_shape)
 soybean$corolla_colour <- as.factor(soybean$corolla_colour)
@@ -72,6 +72,8 @@ sum(is.na(soybean$oil_content))/length(soybean$oil_content) #0.57
 Положения NA в колонках productivity и vegetation_period совпадают.
 Положения NA в колонках protein_content и oil_content совпадают.
 
+
+
 # Преобразование в dataframe
 na_counts_df <- data.frame(Column=names(na_counts), NA_Count=na_counts)
 
@@ -79,6 +81,11 @@ rownames(na_counts_df) <- NULL
 
 # Преобразуйте датафрейм в красивую таблицу с помощью функции kable
 kable(na_counts_df, "pipe", caption = "Количество NA по столбцам")
+```
+В связи с большим количеством наблюдений и неинформативности строк с пропущенными значениями:
+уберем пропущенные значения.
+```{r data import}
+soybean_no_na <- na.omit(soybean)
 ```
 Посмотрим на выбросы в данных:
 ```{r data import}
