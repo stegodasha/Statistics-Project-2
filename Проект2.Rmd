@@ -1,0 +1,94 @@
+---
+title: "Проект 2"
+author: "Соколова Дарья, Бобков Глеб Алексеевич, Бабаева Мария Алексеевна"
+date: "2023-11-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+Загрузим библиотеки для анализа данных:
+```{r libraries}
+library(knitr)# для красивой таблицы
+library(ggplot2) #для графика боксплот
+library(reshape2) #для перевода данных в длинный формат
+library(performance) # для проверки гомогенности дисперсии 
+library(dplyr)
+```
+Импортируем данные:
+```{r}
+df<- dirname(rstudioapi::getSourceEditorContext()$path)
+setwd("C:/Users/Ярослав/OneDrive/Рабочий стол/Учеба/Институт биоинформатики/Статистика и R/Проект 2")
+df <- read.csv("soybean.csv", header= TRUE , stringsAsFactors= FALSE )
+```
+### EDA (Exploratory data analysis)
+## Оценим структуру данных
+```{r data import}
+str(df)
+```
+Данный датасет содержит информацию о полевых испытаниях ~300 сортов (id) сои в 2 локациях в течение 5 лет. 
+Переменные:
+-productivity (г/м^2)
+-oil_content (%)
+-protein_content (%) 
+-vegetation_period (время в днях от всхода до сбора) 
+-leaf_shape: форма листьев 
+-maturation_group: группа созревания (чем больше, тем более позднеспелый) 
+-flowering_group: группа цветения
+-pubescence_colour: цвет опушения
+-corolla_colour: цвет венчика 
+-origin: страна происхождения полегание 
+-lodging_type: полегание
+-growth_type:тип роста (индетерминантный - цветёт до сбора, детерминантный - цветёт один раз)
+```{r cars}
+summary(soybean)
+```
+Приведем данные к соответствующим типам:
+```{r}
+soybean$leaf_shape <- as.factor(soybean$leaf_shape)
+soybean$corolla_colour <- as.factor(soybean$corolla_colour)
+soybean$maturation_group <- as.factor(soybean$maturation_group)
+soybean$flowering_group <- as.factor(soybean$flowering_group)
+soybean$year <- as.factor(soybean$year)
+soybean$origin <- as.factor(soybean$origin)
+soybean$growth_type <- as.factor(soybean$growth_type)
+soybean$maturation_group <- as.factor(soybean$maturation_group)
+soybean$lodging_type <- as.factor(soybean$lodging_type)
+soybean$pubescence_colour <- as.factor(soybean$pubescence_colour)
+soybean$site <- as.factor(soybean$site)
+```
+Посмотрим на пропущенные значения:
+```{r data import}
+na_counts <- sapply(soybean, function(x) sum(is.na(x)))
+
+# Преобразование в dataframe
+na_counts_df <- data.frame(Column=names(na_counts), NA_Count=na_counts)
+
+rownames(na_counts_df) <- NULL
+
+# Преобразуйте датафрейм в красивую таблицу с помощью функции kable
+kable(na_counts_df, "pipe", caption = "Количество NA по столбцам")
+```
+Посмотрим на выбросы в данных:
+```{r data import}
+numeric_vars <- sapply(df, is.numeric)
+soybean_numeric <- soybean[, numeric_vars]
+
+# Создать список переменных для подписей
+variable_names <- names(soybean_numeric)
+
+boxplots <- lapply(seq_along(soybean_numeric), function(i) {
+  ggplot(soybean, aes(x = 1, y = soybean_numeric[[i]])) + 
+    geom_boxplot(fill = "#69b3a2", alpha = 0.5) +
+    labs(title = variable_names[i])  # Добавляем подпись к каждому графику
+})
+
+# Отобразить боксплоты
+for (i in 1:length(boxplots)) {
+  print(boxplots[[i]])
+}
+```
+
+Общий вывод:
+Нашей группой было решено заполнить пропущенные значения в данных productivity и protein_content предсказаниями линейных моделей. Выбросы мы решили не убирать, так как возможно они не случайны и их стоить включить в модель для предсказания величин. 
