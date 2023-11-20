@@ -18,9 +18,9 @@ library(dplyr)
 ```
 Импортируем данные:
 ```{r}
-df<- dirname(rstudioapi::getSourceEditorContext()$path)
-setwd("C:/Users/Ярослав/OneDrive/Рабочий стол/Учеба/Институт биоинформатики/Статистика и R/Проект 2")
-df <- read.csv("soybean.csv", header= TRUE , stringsAsFactors= FALSE )
+main_dir <- dirname(rstudioapi::getSourceEditorContext()$path) 
+setwd(main_dir)
+soybean <- read.csv("soybean.csv")
 ```
 ### EDA (Exploratory data analysis)
 ## Оценим структуру данных
