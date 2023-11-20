@@ -61,6 +61,16 @@ soybean$site <- as.factor(soybean$site)
 Посмотрим на пропущенные значения:
 ```{r data import}
 na_counts <- sapply(soybean, function(x) sum(is.na(x)))
+```
+Высчитаем долю NA значений:
+```{r data import}
+sum(is.na(soybean$productivity))/length(soybean$productivity) #0.52 (52% составляют NA)
+sum(is.na(soybean$vegetation_period))/length(soybean$vegetation_period) #0.52
+sum(is.na(soybean$protein_content))/length(soybean$protein_content) #0.57 (57% составляют NA)
+sum(is.na(soybean$oil_content))/length(soybean$oil_content) #0.57
+```
+Положения NA в колонках productivity и vegetation_period совпадают.
+Положения NA в колонках protein_content и oil_content совпадают.
 
 # Преобразование в dataframe
 na_counts_df <- data.frame(Column=names(na_counts), NA_Count=na_counts)
