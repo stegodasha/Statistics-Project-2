@@ -110,3 +110,45 @@ for (i in 1:length(boxplots)) {
 
 Общий вывод:
 Нашей группой было решено заполнить пропущенные значения в данных productivity и protein_content предсказаниями линейных моделей. Выбросы мы решили не убирать, так как возможно они не случайны и их стоить включить в модель для предсказания величин. 
+
+Далее мы решили проверить и узнать какой сорт наиболее продуктивный простым сравнением средних. 
+```{r data import}
+library(dplyr)
+
+# Группировка по 'id' и вычисление средней продуктивности для каждого сорта
+mean_productivity <- soybean_no_na %>%
+  group_by(id) %>%
+  summarise(mean_productivity = mean(productivity, na.rm = TRUE)) %>%
+  arrange(desc(mean_productivity))
+
+# Вывод средних значений продуктивности для каждого сорта
+print(mean_productivity)
+
+# Выбор сорта с наибольшей средней продуктивностью
+most_productive <- mean_productivity[which.max(mean_productivity$mean_productivity), ]
+print(most_productive)
+
+```
+В данном случае получается, что наиболее продуктивный сорт - сорт под индексом 275.
+
+Но проверим еще с помощью дисперсионного анализа
+```{r data import}
+anova_results <- anova(model, test = "F")
+print(anova_results)
+```
+В результате полуаем, что наиболее важными показателями являются id, oil_content, protein_content и vegetation_period
+Поэтому именно их и будем учитывать в модели. 
+```{r data import}
+model <- aov(productivity ~ id + oil_content + protein_content + vegetation_period, data = soybean_no_na)
+anova_results <- anova(model, test = "F")
+# Демонстрируем результаты ANOVA, после чего смотрим продуктивность в зависимости от многих факторов
+print(anova_results)
+mean_productivity <- aggregate(productivity ~ id + oil_content + protein_content + vegetation_period, data = soybean_no_na, FUN = mean)
+
+# Ищем сорт с наибольшей средней продуктивностью
+most_productive_sort <- mean_productivity[which.max(mean_productivity$productivity), ]
+
+# Выведим информацию о наиболее продуктивном сорте
+print(most_productive_sort)
+```
+Вывод: 165 сорт 
