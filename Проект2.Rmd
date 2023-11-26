@@ -175,3 +175,36 @@ print(most_productive_sort)
 ```
 Вывод: 165 сорт 
 
+Исследование корреляции между переменными количественными непрерывными переменными (protein_content, oil_content, productivity)
+```{r data import}
+cor(select(na.omit(soybean),protein_content, oil_content ,productivity))
+```
+Корреляция: отрицательная  для productivity ~ protein_content ( -0.4670109) и oil_content ~ protein_content (-0.5855247), положительная для oil_content ~ productivity (0.5587576).
+
+По гистограмме видно, что распределение protein_content близко к нормальному
+```{r data import}
+plot(density(soybean_without_na$protein_content))
+hist(soybean_without_na$protein_content)
+```
+Предсказание процентного содержания белка является актуальным для производства protein rich plant-based foods
+Построим модель lm с несколькими придикторами (потенциально влияющими на содержание белка, сюда не входят характеристики цветка и формы листьев) 
+```{r data import}
+model1 <- lm(protein_content ~ oil_content +  maturation_group + origin+ year + productivity, data = na.omit(soybean))
+model1 <- glm(protein_content ~ oil_content +  maturation_group + origin+ year + productivity, data = na.omit(soybean), family="gaussian")
+drop1(model1, test = "F")
+vif(model1)
+```
+Уберем из модели предиктор origin с наименьшим F-value и наибольшим vif для улучшения работы модели.
+```{r data import}
+model2 <- update(model1, .~. - origin)
+AIC(logLik(model2))
+AIC(logLik(model1))
+```
+Последующие попытки убрать предикторы с относительно малым F-value приводят к увеличению AIC, поэтому остановимся модели с таким сочетанием предикторов как в model1.
+Проверим допущения для использования линейной модели 
+```{r data import}
+shapiro.test(residuals(model1))
+par(mfrow=c(2,2))
+plot(model1, which=1:4)
+```
+Значение p-value = 0.005241: можно говорить о приблизительном нормальном распределение остатков (отсутствие паттернов) -> линейная зависимость предикторов
