@@ -12,9 +12,8 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 Загрузим библиотеки для анализа данных:
 ```{r libraries}
 library(knitr)# для красивой таблицы
-library(ggplot2) #для графика боксплот
+library(ggplot2) #для графиков боксплот
 library(reshape2) #для перевода данных в длинный формат
-library(performance) # для проверки гомогенности дисперсии 
 library(dplyr)
 ```
 Импортируем данные:
@@ -83,21 +82,37 @@ soybean_no_na <- na.omit(soybean)
 ```
 Посмотрим на выбросы в данных:
 ```{r data import}
-numeric_vars <- sapply(soybean_no_na, is.numeric)
-soybean_numeric <- soybean_no_na[, numeric_vars]
 
-variable_names <- names(soybean_numeric)
+boxplot(soybean_no_na$productivity,
+        col = rgb(1, 0, 0, alpha = 0.4),
+        xlab = "Продуктивность")
+boxplot(soybean_no_na$vegetation_period,
+        col = "thistle",
+        xlab = "Вегетационный период")
+boxplot(soybean_no_na$protein_content,
+        col = "skyblue",
+        xlab = "Содержание белка")
+boxplot(soybean_no_na$oil_content,
+        col = "sandybrown",
+        xlab = "Содержание жира")
+```
 
-boxplots <- lapply(seq_along(soybean_numeric), function(i) {
-  ggplot(soybean_numeric, aes(x = 1, y = soybean_numeric[[i]])) + 
-    geom_boxplot(fill = "#69b3a2", alpha = 0.5) +
-    labs(title = variable_names[i])  
-})
-
-
-for (i in 1:length(boxplots)) {
-  print(boxplots[[i]])
-}
+```{r data import}
+# numeric_vars <- sapply(soybean_no_na, is.numeric)
+# soybean_numeric <- soybean_no_na[, numeric_vars]
+# 
+# variable_names <- names(soybean_numeric)
+# 
+# boxplots <- lapply(seq_along(soybean_numeric), function(i) {
+#   ggplot(soybean_numeric, aes(x = 1, y = soybean_numeric[[i]])) + 
+#     geom_boxplot(fill = "#69b3a2", alpha = 0.5) +
+#     labs(title = variable_names[i])  
+# })
+# 
+# 
+# for (i in 1:length(boxplots)) {
+#   print(boxplots[[i]])
+# }
 ```
 
 Общий вывод:
@@ -125,17 +140,36 @@ shapiro.test(residuals(result_maturation_protein))
 kruskal.test(protein_content ~ maturation_group,data = soybean_no_na)
 ```
 В этом случае P-value оказался также меньше 0.05 значит мы можем отвергнуть нулевую гипотезу и различия между группами созревания в количестве белка есть.
+Для того, чтобы использовать тест Краскела - Уоллиса формы распределений данных в каждой группе должны совпадать проверим это допущение:
+
+```{r data import}
+ggplot(soybean_no_na, aes(x=protein_content, color=maturation_group)) +
+    geom_density(alpha=0.3) +
+    labs(title="Распределения данных в группах созревания")
+```
+По графику видно, что данные в каждой группе созревания распределены примерно похожим образом, значит мы можем доверять результатам теста Краскела-Уоллиса.
 Так как мы использовали непараметрический критерий для замены Anova, то и для поиска различий между группами должны применить непараметрический критерий, например, Вилкоксона 
 ```{r data import}
 maturation_protein <- pairwise.wilcox.test(soybean_no_na$protein_content,soybean_no_na$maturation_group , p.adjust.method = "bonferroni")
+print(maturation_protein)
 ```
 Визуализируем получившиеся различия:
+```{r data import}
+soybean_no_na %>%
+  ggplot(aes(x=maturation_group, y=protein_content, color=maturation_group)) +
+  geom_boxplot()+
+  geom_jitter(width=0.15, alpha=0.5)+
+  scale_y_log10()+
+  labs(x="Группа созревания", y= "Количество белка") +
+  labs(subtitle="Сравнение групп созревания по количеству белка")
+  scale_x_discrete(guide = guide_axis(n.dodge=2))+
+  theme(legend.position="none")
 
+```
 
 
 Далее мы решили проверить и узнать какой сорт наиболее продуктивный простым сравнением средних. 
 ```{r data import}
-library(dplyr)
 
 # Группировка по 'id' и вычисление средней продуктивности для каждого сорта
 mean_productivity <- soybean_no_na %>%
