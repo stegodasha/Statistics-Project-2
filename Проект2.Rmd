@@ -24,9 +24,7 @@ soybean <- read.csv("soybean.csv")
 ```
 ### EDA (Exploratory data analysis)
 ## Оценим структуру данных
-```{r data import}
-str(df)
-```
+
 Данный датасет содержит информацию о полевых испытаниях ~300 сортов (id) сои в 2 локациях в течение 5 лет. 
 Переменные:
 -productivity (г/м^2)
@@ -61,28 +59,22 @@ soybean$site <- as.factor(soybean$site)
 Посмотрим на пропущенные значения:
 ```{r data import}
 na_counts <- sapply(soybean, function(x) sum(is.na(x)))
+na_counts_df <- data.frame(Column=names(na_counts), NA_Count=na_counts)
+rownames(na_counts_df) <- NULL
+kable(na_counts_df, "pipe", caption = "Количество NA по столбцам")
 ```
-Высчитаем долю NA значений:
+Высчитаем долю NA значений: #надо или убрать или сделать красивый вывод
 ```{r data import}
 sum(is.na(soybean$productivity))/length(soybean$productivity) #0.52 (52% составляют NA)
 sum(is.na(soybean$vegetation_period))/length(soybean$vegetation_period) #0.52
 sum(is.na(soybean$protein_content))/length(soybean$protein_content) #0.57 (57% составляют NA)
 sum(is.na(soybean$oil_content))/length(soybean$oil_content) #0.57
 ```
+
 Положения NA в колонках productivity и vegetation_period совпадают.
 Положения NA в колонках protein_content и oil_content совпадают.
+(это про что?)
 
-
-
-# Преобразование в dataframe
-na_counts_df <- data.frame(Column=names(na_counts), NA_Count=na_counts)
-
-rownames(na_counts_df) <- NULL
-
-# Преобразуйте датафрейм в красивую таблицу с помощью функции kable
-```
-kable(na_counts_df, "pipe", caption = "Количество NA по столбцам")
-```
 В связи с большим количеством наблюдений и неинформативности строк с пропущенными значениями:
 уберем пропущенные значения.
 ```{r data import}
@@ -90,23 +82,52 @@ soybean_no_na <- na.omit(soybean)
 ```
 Посмотрим на выбросы в данных:
 ```{r data import}
-numeric_vars <- sapply(df, is.numeric)
-soybean_numeric <- soybean[, numeric_vars]
+numeric_vars <- sapply(soybean_no_na, is.numeric)
+soybean_numeric <- soybean_no_na[, numeric_vars]
 
-# Создать список переменных для подписей
 variable_names <- names(soybean_numeric)
 
 boxplots <- lapply(seq_along(soybean_numeric), function(i) {
-  ggplot(soybean, aes(x = 1, y = soybean_numeric[[i]])) + 
+  ggplot(soybean_numeric, aes(x = 1, y = soybean_numeric[[i]])) + 
     geom_boxplot(fill = "#69b3a2", alpha = 0.5) +
-    labs(title = variable_names[i])  # Добавляем подпись к каждому графику
+    labs(title = variable_names[i])  
 })
 
-# Отобразить боксплоты
+
 for (i in 1:length(boxplots)) {
   print(boxplots[[i]])
 }
 ```
 
 Общий вывод:
-Нашей группой было решено заполнить пропущенные значения в данных productivity и protein_content предсказаниями линейных моделей. Выбросы мы решили не убирать, так как возможно они не случайны и их стоить включить в модель для предсказания величин. 
+Нашей группой было решено убрать пропущенные значения. Выбросы мы решили не убирать, так как возможно они не случайны и их стоить включить в модель для предсказания величин. 
+
+### Проверка гипотез
+# Влияние группы созревания на содержание белка в сое
+
+Соя является одним из наиболее популярных и распространенных источников растительного белка, широко используемым в пищевой и фармацевтической промышленности.Изучение влияния группы созревания на содержание белка в сое может помочь подобрать наиболее питательные и эффективные сорта сои для производства пищевых продуктов. Разные стадии созревания сои могут оказывать влияние на ее белковый профиль и содержание конкретных аминокислот. Исследование влияния группы созревания на содержание белка в сое может помочь определить оптимальное время сбора урожая и обрабатывать сою в наиболее благоприятных сроках, чтобы получить максимальное содержание белка и наилучшую пищевую ценность.
+
+Для выявления отличий между группами созревания в количестве белка в сое проведём ANOVA.
+Нулевая гипотеза - образцы во всех группах взяты из популяций с одинаковыми средними (то есть различий нет)
+```{r data import}
+result_maturation_protein <- aov(protein_content ~ maturation_group,data = soybean_no_na)
+summary(result_maturation_protein)
+```
+P-value меньше 0.05 значит мы можем отвергнуть нулевую гипотезу, если допущения проведения ANOVA верны. Проверим допущения ANOVA.
+Проведем проверку на нормальное распределения остатков:
+```{r data import}
+check_normality(result_maturation_protein)
+shapiro.test(residuals(result_maturation_protein)) 
+```
+Видим, что остатки распределены не нормально, значит в этом случае нам нужен непараметрический аналог Anova - критерий Краскела — Уоллиса:
+```{r data import}
+kruskal.test(protein_content ~ maturation_group,data = soybean_no_na)
+```
+В этом случае P-value оказался также меньше 0.05 значит мы можем отвергнуть нулевую гипотезу и различия между группами созревания в количестве белка есть.
+Так как мы использовали непараметрический критерий для замены Anova, то и для поиска различий между группами должны применить непараметрический критерий, например, Вилкоксона 
+```{r data import}
+maturation_protein <- pairwise.wilcox.test(soybean_no_na$protein_content,soybean_no_na$maturation_group , p.adjust.method = "bonferroni")
+```
+Визуализируем получившиеся различия:
+
+
