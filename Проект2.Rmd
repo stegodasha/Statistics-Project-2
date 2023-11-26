@@ -1,7 +1,7 @@
 
 ---
 title: "Проект 2"
-author: "Соколова Дарья, Бобков Глеб Алексеевич, Бабаева Мария Алексеевна"
+author: "Группа 12"
 date: "2023-11-20"
 output: html_document
 ---
@@ -13,8 +13,8 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```{r libraries}
 library(knitr)# для красивой таблицы
 library(ggplot2) #для графиков боксплот
-library(reshape2) #для перевода данных в длинный формат
 library(dplyr)
+library(performance)
 ```
 Импортируем данные:
 ```{r}
@@ -97,24 +97,6 @@ boxplot(soybean_no_na$oil_content,
         xlab = "Содержание жира")
 ```
 
-```{r data import}
-# numeric_vars <- sapply(soybean_no_na, is.numeric)
-# soybean_numeric <- soybean_no_na[, numeric_vars]
-# 
-# variable_names <- names(soybean_numeric)
-# 
-# boxplots <- lapply(seq_along(soybean_numeric), function(i) {
-#   ggplot(soybean_numeric, aes(x = 1, y = soybean_numeric[[i]])) + 
-#     geom_boxplot(fill = "#69b3a2", alpha = 0.5) +
-#     labs(title = variable_names[i])  
-# })
-# 
-# 
-# for (i in 1:length(boxplots)) {
-#   print(boxplots[[i]])
-# }
-```
-
 Общий вывод:
 Нашей группой было решено убрать пропущенные значения. Выбросы мы решили не убирать, так как возможно они не случайны и их стоить включить в модель для предсказания величин. 
 
@@ -133,7 +115,6 @@ P-value меньше 0.05 значит мы можем отвергнуть ну
 Проведем проверку на нормальное распределения остатков:
 ```{r data import}
 check_normality(result_maturation_protein)
-shapiro.test(residuals(result_maturation_protein)) 
 ```
 Видим, что остатки распределены не нормально, значит в этом случае нам нужен непараметрический аналог Anova - критерий Краскела — Уоллиса:
 ```{r data import}
@@ -167,6 +148,10 @@ soybean_no_na %>%
 
 ```
 
+Вывод:
+Таким образом, были обнаружены значимые различия между группами созревания: 1 и 2, 1 и 3, 2 и 4, 2 и 5, 3 и 4, 3 и 5. Между 1, 4 и 5 группами значимых отличий обнаружено не было. Таким образом, можно сказать, что чем более позднеспелым является растение, тем выше содержание белка в сое. При этом если растение относится к группе раннеспелых 1, то оно также показывает высокое содержание белка. Что может быть обусловлено генетическими особенностями, условиями выращивания или другими факторами. Однако, необходимо провести дополнительные исследования для более точного определения причин этого явления.
+
+# Выявление наиболее продуктивного сорта сои 
 
 Далее мы решили проверить и узнать какой сорт наиболее продуктивный простым сравнением средних. 
 ```{r data import}
@@ -192,7 +177,7 @@ print(most_productive)
 anova_results <- anova(model, test = "F")
 print(anova_results)
 ```
-В результате полуаем, что наиболее важными показателями являются id, oil_content, protein_content и vegetation_period
+В результате получаем, что наиболее важными показателями являются id, oil_content, protein_content и vegetation_period
 Поэтому именно их и будем учитывать в модели. 
 ```{r data import}
 model <- aov(productivity ~ id + oil_content + protein_content + vegetation_period, data = soybean_no_na)
